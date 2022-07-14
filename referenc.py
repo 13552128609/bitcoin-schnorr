@@ -99,22 +99,40 @@ def pubkey_gen(seckey: bytes) -> bytes:
 def schnorr_sign(msg: bytes, seckey: bytes, aux_rand: bytes) -> bytes:
     if len(msg) != 32:
         raise ValueError('The message must be a 32-byte array.')
+    
+    #compute d0
     d0 = int_from_bytes(seckey)
     if not (1 <= d0 <= n - 1):
         raise ValueError('The secret key must be an integer in the range 1..n-1.')
     if len(aux_rand) != 32:
         raise ValueError('aux_rand must be 32 bytes instead of %i.' % len(aux_rand))
+    
+    #compute P
     P = point_mul(G, d0)
     assert P is not None
+    
+    #compute d
     d = d0 if has_even_y(P) else n - d0
-    t = xor_bytes(bytes_from_int(d), tagged_hash("BIP0340/aux", aux_rand))
+    
+    ### Cancel by Jacob begin
+    #t = xor_bytes(bytes_from_int(d), tagged_hash("BIP0340/aux", aux_rand))
+    ### Cancel by Jacob end
+    
+    ### Add by jacob begin
+    t = tagged_hash("BIP0340/aux", aux_rand)
+    ### Add by jacob end
+    
     k0 = int_from_bytes(tagged_hash("BIP0340/nonce", t + bytes_from_point(P) + msg)) % n
     if k0 == 0:
         raise RuntimeError('Failure. This happens only with negligible probability.')
+    
+    #compute R     
     R = point_mul(G, k0)
     assert R is not None
     k = n - k0 if not has_even_y(R) else k0
     e = int_from_bytes(tagged_hash("BIP0340/challenge", bytes_from_point(R) + bytes_from_point(P) + msg)) % n
+    
+    #compute s
     sig = bytes_from_point(R) + bytes_from_int((k + e * d) % n)
     debug_print_vars()
     if not schnorr_verify(msg, bytes_from_point(P), sig):

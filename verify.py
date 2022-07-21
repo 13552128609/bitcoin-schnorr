@@ -172,8 +172,8 @@ def test_vectors() -> bool:
     with open(os.path.join(sys.path[0], 'test-vectors-verify.csv'), newline='') as csvfile:
         reader = csv.reader(csvfile)
         reader.__next__()
-        for row in reader:
-            (index, seckey_hex, pubkey_hex, aux_rand_hex, msg_hex, sig_hex, result_str, comment) = row
+        for row in reader:            
+            (index, msg_hex, pubkey_hex, sig_hex, result_str) = row
             pubkey = bytes.fromhex(pubkey_hex)
             msg = bytes.fromhex(msg_hex)
             sig = bytes.fromhex(sig_hex)
@@ -185,9 +185,7 @@ def test_vectors() -> bool:
             else:
                 print(' * Failed verification test.')
                 print('   Expected verification result:', result)
-                print('     Actual verification result:', result_actual)
-                if comment:
-                    print('   Comment:', comment)
+                print('     Actual verification result:', result_actual)                
                 all_passed = False
     print()
     if all_passed:
